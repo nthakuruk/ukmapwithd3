@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<head>
+    <style>
+        
+        svg {
+            background:white;
+        }
+        .counties{
+            fill:#cccc;
+            stroke:#3333;
+            stroke-width:1.2;}
+        .addselection{
+            fill:rgb(37, 28, 15);
+
+        }
+        .unselected{
+            fill:white
+        }
+        .circle:hover{
+            stroke: black;
+            stroke-width: 4px;
+        } 
+        .circle{
+            fill: #9b8877;
+            stroke: #053d30;
+            stroke-width: 3;
+            fill-opacity: 0.4;
+        }
+    </style>
+    
+</head>
+    <body>
+<center> <button onclick="window.location.reload();">Reload the Page to change the points</button> </center>
+<div id="new_uk_map"></div>
+<script src="d3.v4.min.js" charset="utf-8"></script>
+<script src="topojson.v1.min.js"></script>
+<script>
+var margin = { top:50, left:50, right:50, bottom:50 };
+var height = 900- margin.top - margin.bottom;
+var width = 1000- margin.left - margin.right;
+var svg = d3.select("#new_uk_map")
+            .append("svg")
+            .attr("height", height + margin.top + margin.bottom)
+            .attr("width", width + margin.left, margin.right)
+            .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+d3.queue()
+  .defer(d3.json,"uk-counties.json")
+  .defer(d3.json,"http://34.78.46.186/Circles/Towns/200")
+  .await(inject);
+var projection = d3.geoAlbers()
+    .center([0, 55.4])
+    .rotate([4.4, 0])
+    .parallels([50, 60])
+    .scale(4000)
+    .translate([width / 2, height / 2]);
+var path = d3.geoPath().projection(projection);
+function inject(error,data,towns){
+
+var counties = topojson.feature(data, data.objects.GBR_adm2).features;
+svg.selectAll(".counties")
+    .data(counties)
+    .enter().append("path")
+    .attr("class", "counties")
+    .attr("d", path)
+    .attr("fill","#ccccc")
+    .on('mouseover', function(d){
+        console.log(d)
+        d3.select(this).classed("addselection", true)
+    })
+    .on('mouseout', function(d){
+        console.log(d)
+        d3.select(this).classed("addselection", false)
+    })
+  var pointer = d3.select('#new_uk_map').append('div').data(towns).attr('class', 'pointer').style('opacity', 0).style('background-color', 'white').style('border', 'solid').style('border-width', '2px').style('border-radius', '5px').style('padding', '5px').style('position', 'absolute');
+var hover = function (d) {
+        console.log(d);
+        pointer.style('opacity', 1);
+      };
+var move = function (d) {
+        pointer.html('Town name: ' +d.Town +'<br>' +'population: ' +d.Population +'<br>' +'County: ' +
+            d.County
+        )
+          .style('left', d3.mouse(this)[0] + 10 + 'px')
+          .style('top', d3.mouse(this)[1] + 'px');
+      };
+var leave = function (d) {
+        pointer.style('opacity', 0);
+      };
+ svg.selectAll('.county-circle').data(towns).enter().append('circle').attr('cx', function (d) {
+        return projection([d.lng, d.lat])[0];
+      }).attr('cy', function (d) {
+        return projection([d.lng, d.lat])[1];
+      }).attr('r', 2).attr('class', 'circle county-circle').on('mouseover', hover).on('mousemove', move).on('mouseleave', leave);
+} </script>
+</body>
+</html>
